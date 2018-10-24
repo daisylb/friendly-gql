@@ -3,17 +3,19 @@
 # with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import graphql as gql
-import typing
+from graphql.type.definition import GraphQLType
+import typing as t
 
 
-def convert_type(type):
+def convert_type(type: t.Any) -> t.Optional[GraphQLType]:
     if type is str:
         return gql.GraphQLNonNull(gql.GraphQLString)
     if type is int:
         return gql.GraphQLNonNull(gql.GraphQLInt)
+    return None
 
 
-def convert_function(function: typing.Callable) -> gql.GraphQLField:
+def convert_function(function: t.Callable) -> gql.GraphQLField:
     gql_return_type = convert_type(function.__annotations__["return"])
     gql_args = {
         name: gql.GraphQLArgument(convert_type(annotation))
