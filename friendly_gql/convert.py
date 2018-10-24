@@ -5,14 +5,58 @@
 import graphql as gql
 from graphql.type.definition import GraphQLType
 import typing as t
+import typing_inspect
+
+NoneType = type(None)
+
+converter_registry = []
+
+
+@converter_registry.append
+def convert_scalars(type) -> t.Optional[GraphQLType]:
+    if type is str:
+        return gql.GraphQLString
+    if type is int:
+        return gql.GraphQLInt
+    return None
+
+
+def extract_optional(type):
+    """If this is a type wrapped in an Optional, return it.
+
+    Else, return None.
+    """
+
+    if typing_inspect.is_union_type(type):
+        args = typing_inspect.get_args(type)
+        if len(args) != 2:
+            return None
+        if args[0] is NoneType:
+            return args[1]
+        if args[1] is NoneType:
+            return args[0]
 
 
 def convert_type(type: t.Any) -> t.Optional[GraphQLType]:
-    if type is str:
-        return gql.GraphQLNonNull(gql.GraphQLString)
-    if type is int:
-        return gql.GraphQLNonNull(gql.GraphQLInt)
-    return None
+    # special handling for typing.Optional
+    
+    nullable = False
+    optional_inner_type = extract_optional(type)
+    if optional_inner_type is not None:
+        nullable = True
+        type = optional_inner_type
+
+    for converter in converter_registry:
+        gql_type = converter(type)
+        if gql_type is not None:
+            break
+    else:
+        return None
+
+    if not nullable:
+        gql_type = gql.GraphQLNonNull(gql_type)
+
+    return gql_type
 
 
 def convert_function(function: t.Callable) -> gql.GraphQLField:

@@ -4,6 +4,12 @@
 
 from . import convert
 import graphql as gql
+import typing as t
+
+
+def test_convert_type():
+    converted = convert.convert_type(int)
+    assert isinstance(converted, gql.GraphQLType)
 
 
 def test_convert():
@@ -24,3 +30,22 @@ def test_convert():
     )
     assert result.data == {"function": "1 2"}
 
+def test_convert_optional():
+    def function(arg: int) -> t.Optional[int]:
+        if arg > 0:
+            return arg
+        return None
+
+    query_type = gql.GraphQLObjectType(
+        "Query", {"function": convert.convert_function(function)}
+    )
+    schema = gql.GraphQLSchema(query=query_type)
+    result = gql.graphql_sync(
+        schema,
+        """
+        query {
+            function(arg: -1)
+        }
+        """,
+    )
+    assert result.data == {"function": None}
