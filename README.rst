@@ -24,7 +24,9 @@ This is a very early work in progress, but the goal is that code like this in Gr
 .. code-block:: python
 
     def create_person(name: str) -> {'ok': bool, 'person': Person}:
-        return {'ok': True, 'person': Person(name=name)}
+        person = Person(name=name)
+        ok = True
+        return {'person': person, 'ok': ok}
 
 Setting up a development environment
 ------------------------------------
